@@ -8,30 +8,20 @@ For some windows gestures check https://github.com/wookiefriseur/LogitechMouseGe
 
 This script wil let you use a button on your mouse to act like the "Gesture button" from Logitech Options.
 It will also let you use another button on your mouse for navigating between browser pages using gestures.
-
-The default settings below will be for the multytasking gestures from macOS
- - Up 		Mission Control 	(Control+Up-Arrow)
- - Down 	Application Windows (Control+Down-Arrow)
- - Left 	move right a space 	(Control+Right-Arrow)
- - Right 	move left a space 	(Control+Left-Arrow)
-
-The default settings below will be for the navigation gestures for in browsers
- - Up 		{ no action }
- - Down 	{ no action }
- - Left 	next page 		(Command+Right-Bracket)
- - Right 	previous page 	(Command+Left-Bracket)
 ]]--
 
- 
--- The button your gestures are mapped to G1 = 1, G2 = 2 etc..
-gestureButtonNumber = 4;
+-- First Gesture Button
+gb1 = 5;
 
--- The button navigation actions are mapped to G1 = 1, G2 = 2 etc..
-navigationButtonNumber = 5;
+-- Second Gesture Button
+gb2 = 4;
 
 -- The minimal horizontal/vertical distance your mouse needs to be moved for the gesture to recognize in pixels
 minimalHorizontalMovement = 200;
 minimalVerticalMovement = 200;
+
+--Max movement for a click input, may require tuning
+clickMovement = 10;
 
 -- Default values for 
 horizontalStartingPosistion = 0;
@@ -39,145 +29,130 @@ verticalStartingPosistion = 0;
 horizontalEndingPosistion = 0;
 verticalEndingPosistion = 0;
 
--- Delay between keypresses in millies
+-- Delay between keypresses in milliseconds
 delay = 20
-
--- Here you can enable/disable features of the script
-missionControlEnabled = true
-applicationWindowsEnabled = true
-moveBetweenSpacesEnabled = true
-browserNavigationEnabled = true
-
--- Toggles debugging messages
-debuggingEnabeld = false
 
 -- Event detection
 function OnEvent(event, arg, family)
-	if event == "MOUSE_BUTTON_PRESSED" and (arg == gestureButtonNumber or arg == navigationButtonNumber) then
-		if debuggingEnabeld then OutputLogMessage("\nEvent: " .. event .. " for button: " .. arg .. "\n") end
-		
-		-- Get stating mouse posistion
-		horizontalStartingPosistion, verticalStartingPosistion = GetMousePosition()
-		
-		if debuggingEnabeld then 
-			OutputLogMessage("Horizontal starting posistion: " .. horizontalStartingPosistion .. "\n") 
-			OutputLogMessage("Vertical starting posistion: " .. verticalStartingPosistion .. "\n") 
-		end
-	end
+    --Set 0,0 to this position
+    if event == "MOUSE_BUTTON_PRESSED" and (arg == gb1 or arg == gb2) then
+        -- Get stating mouse posistion
+        horizontalStartingPosistion, verticalStartingPosistion = GetMousePosition()
+    end
 
-	if event == "MOUSE_BUTTON_RELEASED" and (arg == gestureButtonNumber or arg == navigationButtonNumber) then
-		if debuggingEnabeld then OutputLogMessage("\nEvent: " .. event .. " for button: " .. arg .. "\n") end
+    --Set end position to here then run functions
+    if event == "MOUSE_BUTTON_RELEASED" and (arg == gb1 or arg == gb2) then
+        -- Get ending mouse posistion
+        horizontalEndingPosistion, verticalEndingPosistion = GetMousePosition()
 		
-		-- Get ending mouse posistion
-		horizontalEndingPosistion, verticalEndingPosistion = GetMousePosition()
-		
-		if debuggingEnabeld then 
-			OutputLogMessage("Horizontal ending posistion: " .. horizontalEndingPosistion .. "\n") 
-			OutputLogMessage("Vertical ending posistion: " .. verticalEndingPosistion .. "\n") 
-		end
-
-		-- Calculate differences between start and end posistions
-		horizontalDifference = horizontalStartingPosistion - horizontalEndingPosistion
-		verticalDifference = verticalStartingPosistion - verticalEndingPosistion
-
-		-- Determine the direction of the mouse and if the mouse moved far enough
-		if horizontalDifference > minimalHorizontalMovement then mouseMovedLeft(arg) end
-		if horizontalDifference < -minimalHorizontalMovement then mouseMovedRight(arg) end
-		if verticalDifference > minimalVerticalMovement then mouseMovedDown(arg) end
-		if verticalDifference < -minimalVerticalMovement then mouseMovedUp(arg) end
-	end
+        -- Calculate differences between start and end posistions
+        horizontalDifference = horizontalStartingPosistion - horizontalEndingPosistion
+        verticalDifference = verticalStartingPosistion - verticalEndingPosistion
+              
+        -- Determine the direction of the mouse
+        --If there's more horizontal movement than vertical movement, then execute. Otherwise, L58
+        if math.abs(horizontalDifference) > math.abs(verticalDifference) then
+            --Check that we've moved so little it's a click
+            if math.abs(horizontalDifference) < clickMovement then
+                gbclick(arg)
+      
+            --If it's too much movement to be a click, 
+            else
+                --then check for left movement
+                if horizontalDifference > minimalHorizontalMovement then
+                    mouseMovedLeft(arg)
+                --or all other cases(right movement)
+                else
+                    mouseMovedRight(arg)
+                end
+            end
+	
+        --If anything else is true, then vertical < horizontal
+        else
+            --Check that we've moved so little it's a click
+            if math.abs(verticalDifference) < clickMovement then
+                gbclick(arg)
+            
+            --If it's too much movement to be a click,
+            else
+                --then check for down movement
+                if verticalDifference < minimalVerticalMovement then
+                    mouseMovedDown(arg)
+                --or all other cases(up movement)
+                else
+                    mouseMovedUp(arg)
+                end
+            end
+        end
+    end
 end
 
--- Mouese Moved
-function mouseMovedUp(buttonNumber)
-	if debuggingEnabeld then OutputLogMessage("mouseMovedUp\n") end
+--Gesture Button Clicked
+function gbclick(buttonNumber)
+    OutputLogMessage("Gesture Button Clicked\n")
 	
-	if buttonNumber == gestureButtonNumber and missionControlEnabled then 
-		performMissionControlGesture()
-	end
+    if buttonNumber == gb1 then 
+        OutputLogMessage("gb1\n")
+    end
+    if buttonNumber == gb2 then 
+        OutputLogMessage("gb2\n")
+    end
+
+--4 directions of movement
+function mouseMovedUp(buttonNumber)
+    OutputLogMessage("mouseMovedUp\n")
+	
+    if buttonNumber == gb1 then 
+        OutputLogMessage("gb1\n")
+    end
+    if buttonNumber == gb2 then 
+        OutputLogMessage("gb2\n")
+    end
 end
 
 function mouseMovedDown(buttonNumber)
-	if debuggingEnabeld then OutputLogMessage("mouseMovedDown\n") end
+    OutputLogMessage("mouseMovedDown\n")
 	
-	if buttonNumber == gestureButtonNumber and applicationWindowsEnabled then 
-		performApplicationWindowsGesture()
-	end
+    if buttonNumber == gb1 then 
+        OutputLogMessage("gb1\n")
+    end
+    if buttonNumber == gb2 then 
+        OutputLogMessage("gb2\n")
+    end
 end
 
 function mouseMovedLeft(buttonNumber)
-	if debuggingEnabeld then OutputLogMessage("mouseMovedLeft\n") end
+    OutputLogMessage("mouseMovedLeft\n")
 	
-	if buttonNumber == gestureButtonNumber and moveBetweenSpacesEnabled then 
-		performSwipeLeftGesture()
-	end
-	if buttonNumber == navigationButtonNumber and browserNavigationEnabled then 
-		performNextPageGesture()
-	end
+    if buttonNumber == gb1 then 
+        OutputLogMessage("gb1\n")
+    end
+    if buttonNumber == gb2 then 
+        OutputLogMessage("gb2\n")
+    end
 end
 
 function mouseMovedRight(buttonNumber)
-	if debuggingEnabeld then OutputLogMessage("mouseMovedRight\n") end
+    OutputLogMessage("mouseMovedRight\n")
 	
-	if buttonNumber == gestureButtonNumber and moveBetweenSpacesEnabled then 
-		performSwipeRightGesture()
-	end
-	if buttonNumber == navigationButtonNumber and browserNavigationEnabled then 
-		performPreviousPageGesture()
-	end
+    if buttonNumber == gb1 then 
+        OutputLogMessage("gb1\n")
+    end
+    if buttonNumber == gb2 then 
+        OutputLogMessage("gb2\n")
+    end
 end
 
 -- Gesture Functions
-function performMissionControlGesture()
-	if debuggingEnabeld then OutputLogMessage("performMissionControlGesture\n") end
-	firstKey = "lctrl"
-	secondKey = "up"
-	pressTwoKeys(firstKey, secondKey)
-end
-
-function performApplicationWindowsGesture()
-	if debuggingEnabeld then OutputLogMessage("performApplicationWindowsGesture\n") end
-	firstKey = "lctrl"
-	secondKey = "down"
-	pressTwoKeys(firstKey, secondKey)
-end
-
-function performSwipeLeftGesture()
-	if debuggingEnabeld then OutputLogMessage("performSwipeLeftGesture\n") end
-	firstKey = "lctrl"
-	secondKey = "right"
-	pressTwoKeys(firstKey, secondKey)
-end
-
-function performSwipeRightGesture()
-	if debuggingEnabeld then OutputLogMessage("performSwipeRightGesture\n") end
-	firstKey = "lctrl"
-	secondKey = "left"
-	pressTwoKeys(firstKey, secondKey)
-end
-
--- Browser Navigation Functions
-function performNextPageGesture()
-	if debuggingEnabeld then OutputLogMessage("performNextPageGesture\n") end
-	firstKey = "lgui"
-	secondKey = "rbracket"
-	pressTwoKeys(firstKey, secondKey)
-end
-
-function performPreviousPageGesture()
-	if debuggingEnabeld then OutputLogMessage("performPreviousPageGesture\n") end
-	firstKey = "lgui"
-	secondKey = "lbracket"
-	pressTwoKeys(firstKey, secondKey)
-end
 
 -- Helper Functions
 function pressTwoKeys(firstKey, secondKey)
-	PressKey(firstKey)
-	Sleep(delay)
-	PressKey(secondKey)
-	Sleep(delay)
-	ReleaseKey(firstKey)
-	ReleaseKey(secondKey)
+  PressKey(firstKey)
+  Sleep(delay)
+  PressKey(secondKey)
+  Sleep(delay)
+  ReleaseKey(firstKey)
+  ReleaseKey(secondKey)
 end
 
+end
